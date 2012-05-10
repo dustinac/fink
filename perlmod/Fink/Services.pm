@@ -2304,24 +2304,23 @@ sub add_user {
 	my $uid = get_unused_id() or return 0;
 	my $gid = getgrnam($group);
 
-	if (defined $gid) {
-		system("dscl . -append /Groups/$group GroupMembership $user");
-	} else {
-		$gid = $uid;
-		create_ds_entry("/Groups/$group", name => $group,
-		                                  passwd => '*',
-		                                  gid => $gid,
-		                                  GroupMembership => "$user") or return 0;
-	}
+	create_ds_entry("/Users/$user", name => $user,
+	                                passwd => '*',
+	                                hint => '',
+	                                uid => $uid,
+	                                gid => (defined($gid) ? $gid : $uid),
+	                                home => $home,
+	                                shell => '/usr/bin/false',
+	                                realname => $name) or return 0;
 
-	return create_ds_entry("/Users/$user", name => $user,
-	                                       passwd => '*',
-	                                       hint => '',
-	                                       uid => $uid,
-	                                       gid => $gid,
-	                                       home => $home,
-	                                       shell => '/usr/bin/false',
-	                                       realname => $name);
+	if (defined $gid) {
+		return !system("dscl . -append /Groups/$group GroupMembership $user");
+	} else {
+		return create_ds_entry("/Groups/$group", name => $group,
+		                                         passwd => '*',
+		                                         gid => $uid,
+		                                         GroupMembership => "$user");
+	}
 }
 
 =item create_ds_entry
