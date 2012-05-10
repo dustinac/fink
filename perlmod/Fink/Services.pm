@@ -70,7 +70,8 @@ BEGIN {
 					  &store_rename
 					  &spec2struct &spec2string &get_options
 					  $VALIDATE_HELP $VALIDATE_ERROR $VALIDATE_OK
-					  &find_subpackages &apt_available);
+					  &find_subpackages &apt_available
+					  &ensure_fink_bld);
 }
 our @EXPORT_OK;
 
@@ -2266,6 +2267,113 @@ Check if apt-get seems usable on this system.
 		}
 		return $aptok;
 	}
+}
+
+=item ensure_fink_bld
+
+  ensure_fink_bld;
+
+If the current user database does not contain the fink-bld user, add one.
+
+=cut
+
+sub ensure_fink_bld {
+	return if getpwnam('fink-bld');
+
+	print "Adding user and group fink-bld for building packages unprivileged\n";
+	if (!add_user('fink-bld', 'fink-bld', 'Fink Build System')) {
+		print 'WARNING: Could not add fink-bld user\n';
+	}
+}
+
+=item add_user
+
+  add_user($user, $group, $name, $home);
+
+Creates a new user group in the DirectoryServices database. If a group with name
+$group doesn't exist, then the group is created as well. In this case, for
+convenience, the group will be given the same id as the user. Returns true on
+success.
+
+=cut
+
+sub add_user {
+	my ($user, $group, $name, $home) = @_;
+
+	$home = $home || '/var/empty';
+	my $uid = get_unused_id() or return 0;
+	my $gid = getgrnam($group);
+
+	if (defined $gid) {
+		system("dscl . -append /Groups/$group GroupMembership $user");
+	} else {
+		$gid = $uid;
+		create_ds_entry("/Groups/$group", name => $group,
+		                                  passwd => '*',
+		                                  gid => $gid,
+		                                  GroupMembership => "$user") or return 0;
+	}
+
+	return create_ds_entry("/Users/$user", name => $user,
+	                                       passwd => '*',
+	                                       hint => '',
+	                                       uid => $uid,
+	                                       gid => $gid,
+	                                       home => $home,
+	                                       shell => '/usr/bin/false',
+	                                       realname => $name);
+}
+
+=item create_ds_entry
+
+  create_ds_entry($path, $key => $value,...);
+
+Create an entry in the DirectoryServices database. Returns whether or not it
+succeeded.
+
+=cut
+
+sub create_ds_entry {
+	my $path = shift;
+	my %values = (@_);
+
+	if (system("dscl . -create '$path'")) {
+		print "Couldn't create $path in DirectoryServices\n";
+		return 0;
+	}
+
+	foreach my $key (keys %values) {
+		my $value = $values{$key};
+		if (system("dscl . -create '$path' '$key' '$value'")) {
+			print "Couldn't add key $key to DirectoryServices entry $path\n";
+			system("dscl . -delete '$path'");
+			return 0;
+		}
+	}
+	return 1;
+}
+
+=item get_unused_id
+
+  get_unused_id;
+
+Returns an integer which is used neither as user id nor as a group id.
+
+=cut
+
+sub get_unused_id {
+	my %used;
+	my $min_id = 280;
+	my $max_id = 499;
+	foreach (`dscl -list /Users uid; dscl -list /Groups uid`) {
+		s/.* //;
+		$used{$_} = 1;
+	}
+	for (my $id = $min_id; $id <= $max_id; $id++) {
+		return $id unless $used{$id};
+	}
+	print "WARNING: Couldn't find an unused group/user id between $min_id and $max_id\n";
+	return;
 }
 
 =back

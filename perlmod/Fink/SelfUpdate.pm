@@ -23,7 +23,7 @@
 
 package Fink::SelfUpdate;
 
-use Fink::Services qw(&find_subpackages &get_options);
+use Fink::Services qw(&find_subpackages &get_options &ensure_fink_bld);
 use Fink::Bootstrap qw(&additional_packages &is_perl_supported);
 use Fink::CLI qw(&print_breaking &prompt_boolean &prompt_selection print_breaking_stderr);
 use Fink::Config qw($basepath $config $distribution);
@@ -339,6 +339,8 @@ EOMSG
 		print_breaking("WARNING! This version of Perl ($]) is not currently supported by Fink.  ".
 		               "Updating anyway, but you may encounter problems.\n");
 	}
+
+	ensure_fink_bld;
 
 	# determine essential packages
 	@elist = Fink::Package->list_essential_packages();

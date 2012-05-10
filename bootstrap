@@ -585,6 +585,7 @@ Fink::Engine->new_with_config($config);
 ### interactive configuration
 
 Fink::Configure::configure();
+Fink::Services::ensure_fink_bld();
 
 if (($arch eq "x86_64") and ($distribution eq "10.5")) {
 	Fink::Bootstrap::bootstrap1("perl588-bootstrap");
