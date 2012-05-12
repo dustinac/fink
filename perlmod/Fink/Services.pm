@@ -2358,8 +2358,8 @@ Returns an integer which is used neither as user id nor as a group id.
 
 sub get_unused_id {
 	my %used;
-	my $min_id = 280;
-	my $max_id = 499;
+	my $min_id = 600;
+	my $max_id = 699;
 	foreach (`dscl -list /Users uid; dscl -list /Groups uid`) {
 		s/.* //;
 		$used{$_} = 1;
