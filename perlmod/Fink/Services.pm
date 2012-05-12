@@ -2304,10 +2304,10 @@ sub add_user {
 	my $uid = get_unused_id() or return 0;
 	my $gid = getgrnam($group);
 
-	create_ds_entry("/Users/$user", ['name', $user],
+	create_ds_entry("/Users/$user", ['uid', $uid],
+	                                ['name', $user],
 	                                ['passwd', '*'],
 	                                ['hint', ''],
-	                                ['uid', $uid],
 	                                ['gid', (defined($gid) ? $gid : $uid)],
 	                                ['home', $home],
 	                                ['shell', '/usr/bin/false'],
@@ -2316,9 +2316,9 @@ sub add_user {
 	if (defined $gid) {
 		return !system("dscl . -append /Groups/$group GroupMembership $user");
 	} else {
-		return create_ds_entry("/Groups/$group", ['name', $group],
+		return create_ds_entry("/Groups/$group", ['gid', $uid],
+		                                         ['name', $group],
 		                                         ['passwd', '*'],
-		                                         ['gid', $uid],
 		                                         ['GroupMembership', "$user"]);
 	}
 }
@@ -2335,11 +2335,6 @@ succeeded.
 sub create_ds_entry {
 	my $path = shift;
 	my @values = @_;
-
-	if (system("dscl . -create '$path'")) {
-		print "Couldn't create $path in DirectoryServices\n";
-		return 0;
-	}
 
 	foreach my $setting (@values) {
 		my $key = $setting->[0];
