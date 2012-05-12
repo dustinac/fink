@@ -2304,22 +2304,22 @@ sub add_user {
 	my $uid = get_unused_id() or return 0;
 	my $gid = getgrnam($group);
 
-	create_ds_entry("/Users/$user", name => $user,
-	                                passwd => '*',
-	                                hint => '',
-	                                uid => $uid,
-	                                gid => (defined($gid) ? $gid : $uid),
-	                                home => $home,
-	                                shell => '/usr/bin/false',
-	                                realname => $name) or return 0;
+	create_ds_entry("/Users/$user", ['name', $user],
+	                                ['passwd', '*'],
+	                                ['hint', ''],
+	                                ['uid', $uid],
+	                                ['gid', (defined($gid) ? $gid : $uid)],
+	                                ['home', $home],
+	                                ['shell', '/usr/bin/false'],
+	                                ['realname', $name]) or return 0;
 
 	if (defined $gid) {
 		return !system("dscl . -append /Groups/$group GroupMembership $user");
 	} else {
-		return create_ds_entry("/Groups/$group", name => $group,
-		                                         passwd => '*',
-		                                         gid => $uid,
-		                                         GroupMembership => "$user");
+		return create_ds_entry("/Groups/$group", ['name', $group],
+		                                         ['passwd', '*'],
+		                                         ['gid', $uid],
+		                                         ['GroupMembership', "$user"]);
 	}
 }
 
@@ -2334,15 +2334,16 @@ succeeded.
 
 sub create_ds_entry {
 	my $path = shift;
-	my %values = (@_);
+	my @values = @_;
 
 	if (system("dscl . -create '$path'")) {
 		print "Couldn't create $path in DirectoryServices\n";
 		return 0;
 	}
 
-	foreach my $key (keys %values) {
-		my $value = $values{$key};
+	foreach my $setting (@values) {
+		my $key = $setting->[0];
+		my $value = $setting->[1];
 		if (system("dscl . -create '$path' '$key' '$value'")) {
 			print "Couldn't add key $key to DirectoryServices entry $path\n";
 			system("dscl . -delete '$path'");
