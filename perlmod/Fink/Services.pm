@@ -2356,15 +2356,10 @@ Returns an integer which is used neither as user id nor as a group id.
 =cut
 
 sub get_unused_id {
-	my %used;
 	my $min_id = 600;
 	my $max_id = 699;
-	foreach (`dscl -list /Users uid; dscl -list /Groups uid`) {
-		s/.* //;
-		$used{$_} = 1;
-	}
 	for (my $id = $min_id; $id <= $max_id; $id++) {
-		return $id unless $used{$id};
+		return $id unless (getpwuid $id or getgrgid $id);
 	}
 	print "WARNING: Couldn't find an unused group/user id between $min_id and $max_id\n";
 	return;
