@@ -2356,8 +2356,9 @@ Returns an integer which is used neither as user id nor as a group id.
 =cut
 
 sub get_unused_id {
-	my $min_id = 600;
-	my $max_id = 699;
+	require Fink::Config;
+	my $min_id = $Fink::Config::config->param('AutoUidBase', 600);
+	my $max_id = $min_id + 99;
 	for (my $id = $min_id; $id <= $max_id; $id++) {
 		return $id unless (getpwuid $id or getgrgid $id);
 	}
