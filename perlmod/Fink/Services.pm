@@ -2304,21 +2304,20 @@ sub add_user {
 	my $uid = get_unused_id() or return 0;
 	my $gid = getgrnam($group);
 
-	create_ds_entry("/Users/$user", ['uid', $uid],
-	                                ['name', $user],
-	                                ['passwd', '*'],
-	                                ['hint', ''],
-	                                ['gid', (defined($gid) ? $gid : $uid)],
-	                                ['home', $home],
-	                                ['shell', '/usr/bin/false'],
-	                                ['realname', $name]) or return 0;
+	create_ds_entry("/Users/$user", ['UniqueID', $uid],
+	                                ['Password', '*'],
+	                                ['AuthenticationHint', ''],
+	                                ['PrimaryGroupID', (defined($gid) ? $gid : $uid)],
+	                                ['NFSHomeDirectory', $home],
+	                                ['UserShell', '/usr/bin/false'],
+	                                ['RealName', $name]) or return 0;
 
 	if (defined $gid) {
 		return !system("dscl . -append /Groups/$group GroupMembership $user");
 	} else {
-		return create_ds_entry("/Groups/$group", ['gid', $uid],
-		                                         ['name', $group],
-		                                         ['passwd', '*'],
+		return create_ds_entry("/Groups/$group", ['PrimaryGroupID', $uid],
+		                                         ['RecordName', $group],
+		                                         ['Password', '*'],
 		                                         ['GroupMembership', "$user"]);
 	}
 }
