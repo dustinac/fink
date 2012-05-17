@@ -2311,7 +2311,6 @@ sub add_user {
 	                                ['NFSHomeDirectory', $home],
 	                                ['UserShell', '/usr/bin/false'],
 	                                ['RealName', $name]) or return 0;
-
 	if (defined $gid) {
 		return !system("dscl . -append /Groups/$group GroupMembership $user");
 	} else {
@@ -2320,6 +2319,7 @@ sub add_user {
 		                                         ['Password', '*'],
 		                                         ['GroupMembership', "$user"]);
 	}
+	system ("dscl . -delete /Users/$user AuthenticationAuthority");
 }
 
 =item create_ds_entry
